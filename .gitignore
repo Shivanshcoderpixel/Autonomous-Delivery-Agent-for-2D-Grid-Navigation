@@ -1,207 +1,129 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[codz]
-*$py.class
+import heapq
+from collections import deque
+import random
 
-# C extensions
-*.so
+class GridEnvironment:
+    def __init__(self, grid, static_obstacles, dynamic_obstacles_schedule=None):
+        self.grid = grid
+        self.rows = len(grid)
+        self.cols = len(grid[0])
+        self.static_obstacles = set(static_obstacles)
+        self.dynamic_obstacles_schedule = dynamic_obstacles_schedule or {}
+    
+    def is_cell_blocked(self, r, c, time=None):
+        if (r, c) in self.static_obstacles:
+            return True
+        if time and time in self.dynamic_obstacles_schedule:
+            if (r, c) in self.dynamic_obstacles_schedule[time]:
+                return True
+        return False
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+    def neighbors(self, r, c):
+        for dr, dc in [(0,1),(1,0),(0,-1),(-1,0)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < self.rows and 0 <= nc < self.cols:
+                yield (nr, nc)
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+def bfs(env, start, goal):
+    queue = deque([start])
+    came_from = {start: None}
+    while queue:
+        current = queue.popleft()
+        if current == goal:
+            break
+        for neighbor in env.neighbors(*current):
+            if neighbor not in came_from and not env.is_cell_blocked(*neighbor):
+                queue.append(neighbor)
+                came_from[neighbor] = current
+    return reconstruct_path(came_from, start, goal)
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+def uniform_cost_search(env, start, goal):
+    frontier = []
+    heapq.heappush(frontier, (0, start))
+    came_from = {start: None}
+    cost_so_far = {start: 0}
+    while frontier:
+        current_cost, current = heapq.heappop(frontier)
+        if current == goal:
+            break
+        for neighbor in env.neighbors(*current):
+            if env.is_cell_blocked(*neighbor):
+                continue
+            new_cost = cost_so_far[current] + env.grid[neighbor[0]][neighbor[1]]
+            if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                cost_so_far[neighbor] = new_cost
+                heapq.heappush(frontier, (new_cost, neighbor))
+                came_from[neighbor] = current
+    return reconstruct_path(came_from, start, goal)
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py.cover
-.hypothesis/
-.pytest_cache/
-cover/
+def manhattan_heuristic(a, b):
+    return abs(a[0]-b[0]) + abs(a[1]-b[1])
 
-# Translations
-*.mo
-*.pot
+def a_star_search(env, start, goal):
+    frontier = []
+    heapq.heappush(frontier, (0, start))
+    came_from = {start: None}
+    cost_so_far = {start: 0}
+    while frontier:
+        _, current = heapq.heappop(frontier)
+        if current == goal:
+            break
+        for neighbor in env.neighbors(*current):
+            if env.is_cell_blocked(*neighbor):
+                continue
+            new_cost = cost_so_far[current] + env.grid[neighbor[0]][neighbor[1]]
+            if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                cost_so_far[neighbor] = new_cost
+                priority = new_cost + manhattan_heuristic(neighbor, goal)
+                heapq.heappush(frontier, (priority, neighbor))
+                came_from[neighbor] = current
+    return reconstruct_path(came_from, start, goal)
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+def reconstruct_path(came_from, start, goal):
+    if goal not in came_from:
+        return []  # No path found
+    path = []
+    current = goal
+    while current != start:
+        path.append(current)
+        current = came_from[current]
+    path.append(start)
+    path.reverse()
+    return path
 
-# Flask stuff:
-instance/
-.webassets-cache
+def main():
+    # Sample grid (terrain costs)
+    grid = [
+        [1, 1, 2, 1, 3],
+        [1, 3, 2, 1, 1],
+        [1, 1, 1, 4, 1],
+        [4, 1, 1, 1, 1],
+        [1, 1, 2, 1, 1]
+    ]
+    
+    # Static obstacles (cells blocked)
+    static_obstacles = {(1,1), (3,0)}
+    
+    # Dynamic obstacles schedule as time : set(cells)
+    dynamic_obstacles_schedule = {
+        3: {(2,3)},
+        4: {(3,3), (4,2)}
+    }
+    
+    env = GridEnvironment(grid, static_obstacles, dynamic_obstacles_schedule)
+    
+    start = (0, 0)
+    goal = (4, 4)
+    
+    print("BFS path:")
+    print(bfs(env, start, goal))
+    
+    print("Uniform Cost Search path:")
+    print(uniform_cost_search(env, start, goal))
+    
+    print("A* Search path:")
+    print(a_star_search(env, start, goal))
 
-# Scrapy stuff:
-.scrapy
+if __name__ == "__main__":
+    main()
 
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
-
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
-#poetry.toml
-
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
-.pdm-python
-.pdm-build/
-
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
-
-# Ruff stuff:
-.ruff_cache/
-
-# PyPI configuration file
-.pypirc
-
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
-
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
