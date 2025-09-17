@@ -1,0 +1,31 @@
+def manhattan_heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def a_star_search(grid_env, start, goal):
+    frontier = []
+    heapq.heappush(frontier, (0, start))
+    came_from = {start: None}
+    cost_so_far = {start: 0}
+    
+    while frontier:
+        _, current = heapq.heappop(frontier)
+        if current == goal:
+            break
+        for neighbor in grid_env.neighbors(*current):
+            if grid_env.is_cell_blocked(*neighbor):
+                continue
+            new_cost = cost_so_far[current] + grid_env.grid[neighbor[0]][neighbor[1]]
+            if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                cost_so_far[neighbor] = new_cost
+                priority = new_cost + manhattan_heuristic(neighbor, goal)
+                heapq.heappush(frontier, (priority, neighbor))
+                came_from[neighbor] = current
+    
+    # Reconstruct path
+    path = []
+    pos = goal
+    while pos:
+        path.append(pos)
+        pos = came_from.get(pos)
+    path.reverse()
+    return path
