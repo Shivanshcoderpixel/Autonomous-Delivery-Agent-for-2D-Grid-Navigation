@@ -1,0 +1,21 @@
+class GridEnvironment:
+    def __init__(self, grid, terrain_costs, static_obstacles, dynamic_obstacles_schedule):
+        self.grid = grid  # 2D list or numpy array of cell costs (≥1)
+        self.rows = len(grid)
+        self.cols = len(grid[0])
+        self.static_obstacles = static_obstacles  # set of (r, c)
+        self.dynamic_obstacles_schedule = dynamic_obstacles_schedule  # dict from time to positions
+    
+    def is_cell_blocked(self, r, c, time=None):
+        if (r, c) in self.static_obstacles:
+            return True
+        if time and time in self.dynamic_obstacles_schedule:
+            if (r, c) in self.dynamic_obstacles_schedule[time]:
+                return True
+        return False
+
+    def neighbors(self, r, c):
+        for dr, dc in [(0,1), (1,0), (0,-1), (-1,0)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < self.rows and 0 <= nc < self.cols:
+                yield (nr, nc)
