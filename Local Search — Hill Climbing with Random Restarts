@@ -1,0 +1,29 @@
+import random
+
+def cost_path(grid_env, path):
+    return sum(grid_env.grid[r][c] for r,c in path)
+
+def hill_climbing(grid_env, start, goal, max_iter=100):
+    current_path = a_star_search(grid_env, start, goal)  # start with A*
+    current_cost = cost_path(grid_env, current_path)
+    
+    for _ in range(max_iter):
+        # Generate neighbor path by random small modification (e.g. reroute part)
+        # Here simplified by choosing random start-as-is due to complexity of replanning
+        neighbor_path = a_star_search(grid_env, start, goal)
+        neighbor_cost = cost_path(grid_env, neighbor_path)
+        if neighbor_cost < current_cost:
+            current_path = neighbor_path
+            current_cost = neighbor_cost
+    return current_path
+
+def random_restart_hill_climbing(grid_env, start, goal, restarts=5):
+    best_path = None
+    best_cost = float('inf')
+    for _ in range(restarts):
+        path = hill_climbing(grid_env, start, goal)
+        c = cost_path(grid_env, path)
+        if c < best_cost:
+            best_path = path
+            best_cost = c
+    return best_path
