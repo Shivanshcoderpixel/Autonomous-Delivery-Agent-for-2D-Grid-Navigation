@@ -1,0 +1,23 @@
+from collections import deque
+
+def bfs(grid_env, start, goal):
+    queue = deque([start])
+    came_from = {start: None}
+    
+    while queue:
+        current = queue.popleft()
+        if current == goal:
+            break
+        for neighbor in grid_env.neighbors(*current):
+            if neighbor not in came_from and not grid_env.is_cell_blocked(*neighbor):
+                queue.append(neighbor)
+                came_from[neighbor] = current
+    
+    # Reconstruct path
+    path = []
+    pos = goal
+    while pos:
+        path.append(pos)
+        pos = came_from.get(pos)
+    path.reverse()
+    return path
