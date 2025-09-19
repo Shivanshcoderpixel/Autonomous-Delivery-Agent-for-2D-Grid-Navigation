@@ -1,4 +1,4 @@
-mport heapq
+import heapq
 from collections import deque
 import random
 
