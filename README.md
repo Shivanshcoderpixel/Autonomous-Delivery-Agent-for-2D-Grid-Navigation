@@ -17,3 +17,41 @@ pathfinding_project/
 ├── main.py
 └── README.md
 ```
+Architecture Diagram:-
+```
++-------------------------------------------------------------+
+|                          User / CLI                         |
+|            (Run main.py or integrate with GUI/API)          |
++------------------------------+------------------------------+
+                               |
+                               v
++-------------------------------------------------------------+
+|                        Application Layer                    |
+|        • Simulation Runner (main.py)                        |
+|        • Task Manager (start/goal input, scheduling)        |
++------------------------------+------------------------------+
+                               |
+                               v
++-------------------------------------------------------------+
+|                      Path Planning Layer                    |
+|   • BFS Module  • Uniform Cost Search  • A* Search          |
+|   • Re-planning (if dynamic obstacles encountered)          |
++------------------------------+------------------------------+
+                               |
+                               v
++-------------------------------------------------------------+
+|                     Environment / World Model               |
+|   • GridEnvironment                                         |
+|   • Terrain Costs                                           |
+|   • Static Obstacles                                        |
+|   • Dynamic Obstacles Schedule                              |
++------------------------------+------------------------------+
+                               |
+                               v
++-------------------------------------------------------------+
+|                        Utility Services                     |
+|   • reconstruct_path                                        |
+|   • Heuristics (Manhattan distance)                         |
+|   • Logging / Testing                                       |
++-------------------------------------------------------------+
+```
